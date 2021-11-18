@@ -34,6 +34,7 @@ public class HunkBot {
     int ourCounter = 0;
     int oppCounter = 0;
     FastReader reader = new FastReader();
+    Point ourSink;
 
     static class Point {
         int x;
@@ -178,6 +179,9 @@ public class HunkBot {
 
     void setupSink(int xSink, int ySink, boolean ourSink){
         board[xSink][ySink].owner = (ourSink ? 2 : -2);
+        if(ourSink) {
+            this.ourSink = new Point(xSink, ySink);
+        }
     }
 
     void initializeBoard(int rows, int columns) {
@@ -314,20 +318,29 @@ public class HunkBot {
     }
 
     void refreshWeights() {
-        for(int i=0; i < board.length ; i++) {
-            for(int j=0; j < board[0].length; j++) {
-                Cell currentCell = board[i][j];
-                if (currentCell.owner == 1 || currentCell.owner == 0) {
-                    currentCell.weight = 100;
-                } else {
-                    currentCell.weight = -100;
+        for(int i=-2 ; i < 2 ; i++) {
+            for (int j = -2 ; j < 2 ; j++) {
+                int level = Math.max(Math.abs(i), Math.abs(j));
+                if (!(i == 0 && j == 0) && (ourSink.x + i >= 0 && ourSink.x + i < board.length)
+                        && (ourSink.y + j >= 0 && ourSink.y + j < board[0].length)) {
+                    Cell currentCell = board[ourSink.x + i][ourSink.y + j];
+                    if (currentCell.currentMass >= currentCell.criticalMass - 2) {
+                        currentCell.weight = 90 - level - currentCell.currentMass + 1;
+                    } else {
+                        currentCell.weight = 100 - level - currentCell.currentMass + 1;
+                    }
                 }
             }
         }
-    }
-
-    void refreshWeightsSpiral() {
-       // for(in)
+        // Reset weights for opponent tiles and sink tiles
+        // Don't change
+        for(int i = 0; i < board.length ; i++) {
+            for (int j = 0; j < board[0].length; j++) {
+                if (board[i][j].owner < 0 || board[i][j].owner == 2) {
+                    board[i][j].weight = -100;
+                }
+            }
+        }
     }
 
     private Point cellSelection() {
@@ -351,6 +364,7 @@ public class HunkBot {
                     else if (bestCells.firstElement().weight < board[i][j].weight) {
                         bestCells.clear();
                         bestCells.add(board[i][j]);
+                        cellPoints.clear();
                         cellPoints.add(new Point(i, j));
                     }
                 }
