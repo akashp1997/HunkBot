@@ -24,7 +24,7 @@ enum MOVE
  */
 
 class Cell {
-    public int owner=0, currentMass=0, weight=0, criticalMass;
+    public int owner=0, currentMass=0, weight=0, criticalMass, heuristic=0;
 }
 
 public class HunkBot {
@@ -317,21 +317,52 @@ public class HunkBot {
         }
     }
 
-    void refreshWeights() {
-        for(int i=-2 ; i < 2 ; i++) {
-            for (int j = -2 ; j < 2 ; j++) {
-                int level = Math.max(Math.abs(i), Math.abs(j));
-                if (!(i == 0 && j == 0) && (ourSink.x + i >= 0 && ourSink.x + i < board.length)
-                        && (ourSink.y + j >= 0 && ourSink.y + j < board[0].length)) {
-                    Cell currentCell = board[ourSink.x + i][ourSink.y + j];
-                    if (currentCell.currentMass >= currentCell.criticalMass - 2) {
-                        currentCell.weight = 90 - level - currentCell.currentMass + 1;
+    Vector<Cell> getAdjacentCells(Point p) {
+        Vector <Cell> adjacentCells = new Vector<>();
+        for(int i = -1 ; i < 2 ; i ++) {
+            for(int j = -1 ; j < 2 ; j++) {
+                if ((p.x + i > 0 && p.x + i < board.length - 1)
+                        && (p.y + j > 0 && p.y + j < board[0].length - 1)
+                        && Math.abs(i) != Math.abs(j)) {
+                    adjacentCells.add(board[p.x + i][p.y + j]);
+                }
+            }
+        }
+        return adjacentCells;
+    }
+
+    void calculateCellHeuristic() {
+        for(int i = 0; i < board.length; i++) {
+            for(int j = 0; j < board[0].length; j++) {
+                Point currentPoint = new Point(i, j);
+                Cell currentCell = board[i][j];
+                Vector <Cell> adjacentCells = getAdjacentCells(currentPoint);
+                int opponentAdjacentCount = 0;
+                for(int cellItr=0 ; cellItr < adjacentCells.size(); cellItr++) {
+                    Cell adjacentCell = adjacentCells.get(cellItr);
+                    if(adjacentCell.currentMass == adjacentCell.criticalMass - 1 && adjacentCell.owner < 0) {
+                        currentCell.weight -= 5 - adjacentCell.criticalMass;
+                        opponentAdjacentCount++;
+                    } else if (adjacentCell.owner > 0) {
+                        currentCell.weight += 1;
+                    }
+                }
+                if(opponentAdjacentCount == 0) {
+                    if(currentCell.currentMass == currentCell.criticalMass - 1) {
+                        currentCell.weight += 2;
                     } else {
-                        currentCell.weight = 100 - level - currentCell.currentMass + 1;
+                        currentCell.weight += currentCell.criticalMass - 1;
                     }
                 }
             }
         }
+    }
+
+
+    void refreshWeights() {
+        calculateCellHeuristic();
+
+
         // Reset weights for opponent tiles and sink tiles
         // Don't change
         for(int i = 0; i < board.length ; i++) {
