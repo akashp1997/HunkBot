@@ -219,6 +219,7 @@ public class HunkBot {
     Point makeMove() {
         Point selectedPoint = new Point(0,0);
         doBoardMove(true, selectedPoint);
+        refreshWeights();
 //        printBoard();
         return selectedPoint;
     }
@@ -228,10 +229,12 @@ public class HunkBot {
         opponentMoveCell.owner = -1;
         Point opponentPoint = new Point(x1, y1);
         doBoardMove(false, opponentPoint);
+        refreshWeights();
 //        printBoard();
 
-        Point ourPoint = new Point(0, 0);
+        Point ourPoint = cellSelection();
         doBoardMove(true, ourPoint);
+        refreshWeights();
 //        printBoard();
         return ourPoint;
     }
@@ -310,6 +313,23 @@ public class HunkBot {
         }
     }
 
+    void refreshWeights() {
+        for(int i=0; i < board.length ; i++) {
+            for(int j=0; j < board[0].length; j++) {
+                Cell currentCell = board[i][j];
+                if (currentCell.owner == 1 || currentCell.owner == 0) {
+                    currentCell.weight = 100;
+                } else {
+                    currentCell.weight = -100;
+                }
+            }
+        }
+    }
+
+    void refreshWeightsSpiral() {
+       // for(in)
+    }
+
     private Point cellSelection() {
         Vector<Cell> bestCells = new Vector<Cell>();
         Vector<Point> cellPoints = new Vector<Point>();
@@ -336,7 +356,10 @@ public class HunkBot {
                 }
             }
         }
-        return cellPoints.firstElement();
+        int randomIndex = (int)(Math.random() * (cellPoints.size() - 1));
+        return cellPoints.get(randomIndex);
         // Select the best cell which is closest to the group of cells belonging to us, without triggering chain reactions
     }
+
+
 }
